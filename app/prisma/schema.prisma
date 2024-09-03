@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+//  npx prisma studio
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User{
+  id        String      @id @default(uuid())
+  email     String      @unique
+  provider  Provider
+  streams   Stream[]  @relation("user")
+  upvotes   Upvote[]
+}
+ 
+model Stream{ 
+  id            String      @id @default(uuid())
+  type          StreamType
+  url           String
+  extractedId   String
+  title         String     @default("")
+  smallImg      String     @default("")
+  bigImg        String     @default("")
+  active        Boolean    @default(true)
+  played        Boolean    @default(false)
+  playedTs      DateTime?
+  createAt      DateTime      @default(now())
+  upvotes       Upvote[]
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], name: "user")
+  currentStream CurrentStream?  // ? means , optionally , ie maybe , ie this stream maybe a currentStream
+}
+
+model CurrentStream {
+  userId       String    @id
+  streamId     String?   @unique
+  stream       Stream?    @relation(fields: [streamId], references: [id])
+}
+
+model Upvote {
+  id        String      @id @default(uuid())
+  userId    String
+  streamId  String
+  user      User        @relation(fields: [userId], references: [id])
+  stream    Stream      @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  // stream    Stream      @relation(fields: [streamId], references: [id])
+  @@unique([userId, streamId])
+  //this sasys that every entry in the Upvote table must be unique for userId and streamId tuples
+}
+
+
+enum Role{
+  Streamer //streamer is the one who can post songs , ie put up songs for queuue
+  Listener // listerner just upvotes
+}
+enum Provider{
+  Google
+  // Github , etc...
+}
+
+enum StreamType{
+  Spotify
+  Youtube
+}
+
+
