@@ -25,10 +25,11 @@ interface Video {
     "active": boolean,
     "userId": string,
     "upvotes": number,
-    "haveUpvoted": boolean
+    "haveUpvoted": boolean,
+    "played":boolean
 }
 
-const REFRESH_INTERVAL_MS = 10 * 1000;
+const REFRESH_INTERVAL_MS = 10 * 10000;
 
 export default function StreamView({
     creatorId,
@@ -68,7 +69,7 @@ export default function StreamView({
 
   useEffect(() => {
     if (!videoPlayerRef.current) {
-        console.log("video ovver")
+        // console.log("video ovver")
         return;
     }
     let player = YouTubePlayer(videoPlayerRef.current);
@@ -79,9 +80,6 @@ export default function StreamView({
     // 'playVideo' is queue until the player is ready to received API calls and after 'loadVideoById' has been called.
     player.playVideo();
     function eventHandler(event: any) {
-        console.log("here")
-        console.log(event);
-        console.log(event.data);
         if (event.data === 0) {
             playNext();
         }
@@ -107,23 +105,19 @@ export default function StreamView({
     setInputLink('')
   }
 
-  const handleVote = (id: string, isUpvote: boolean) => {
+  const handleVote = (id: string, isUpvote: boolean) => { // false means downvote , true means upvote
     setQueue(queue.map(video => 
       video.id === id 
         ? { 
             ...video, 
             upvotes: isUpvote ? video.upvotes + 1 : video.upvotes - 1,
-            haveUpvoted: !video.haveUpvoted
+            // haveUpvoted: !video.haveUpvoted
+            haveUpvoted: isUpvote
           } 
         : video
     ).sort((a, b) => (b.upvotes) - (a.upvotes)))
-    console.log("herer")
-    const requestBody = JSON.stringify({
-        streamId: id,
-    });
-    // Calculate the size of the request body in bytes
-    const encoder = new TextEncoder();
-    const bodySizeInBytes = encoder.encode(requestBody).length;
+    console.log("here")
+    console.log(isUpvote)
     
     fetch(`/api/streams/${isUpvote ? "upvote" : "downvote"}`, {
         method: "POST",
@@ -199,7 +193,7 @@ export default function StreamView({
                                 <div className="flex-grow">
                                 <h3 className="font-semibold text-white">{video.title}</h3>
                                 <div className="flex items-center space-x-2 mt-2">
-                                    <Button 
+                                    {/* <Button 
                                     variant="outline" 
                                     size="sm"
                                     onClick={() => handleVote(video.id, video.haveUpvoted ? false : true)}
@@ -207,7 +201,29 @@ export default function StreamView({
                                     >
                                     {video.haveUpvoted ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                     <span>{video.upvotes}</span>
+                                    </Button> */}
+                                    <div className='flex items-center space-x-1 bg-gray-800 text-white border-gray-700 hover:bg-gray-700'>{video.upvotes}</div>
+                                    
+                                    <Button 
+                                        disabled={video.haveUpvoted}  // Disable if already upvoted
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => handleVote(video.id, true)}  // Upvote action
+                                        className="flex items-center space-x-1 bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+                                    >
+                                        <ChevronUp className="h-4 w-4" />                                
                                     </Button>
+
+                                    <Button 
+                                        disabled={!video.haveUpvoted}  // Disable if not upvoted yet
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => handleVote(video.id, false)}  // Downvote action
+                                        className="flex items-center space-x-1 bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+                                    >
+                                        <ChevronDown className="h-4 w-4" />                                     
+                                    </Button>
+                                    <h2 className="font-semibold text-white">{video.played ? "Played" : "Queued"}</h2>
                                 </div>
                                 </div>
                             </CardContent>
@@ -255,7 +271,7 @@ export default function StreamView({
                                             {/* <iframe width={"100%"} height={300} src={`https://www.youtube.com/embed/${currentVideo.extractedId}?autoplay=1`} allow="autoplay"></iframe> */}
                                         </> : <>
                                         <img 
-                                            src={currentVideo.bigImg} 
+                                            src={currentVideo.bigImg==null? currentVideo.smallImg : currentVideo.bigImg} 
                                             className="w-full h-72 object-cover rounded"
                                         />
                                         <p className="mt-2 text-center font-semibold text-white">{currentVideo.title}</p>
